@@ -26,4 +26,4 @@ let part2 =
     |> Seq.sum
 
 printfn "Part 1 : %d" (part1)
-printfn "Part 1 : %d" (part2)
+printfn "Part 2 : %d" (part2)
