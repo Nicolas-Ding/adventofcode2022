@@ -13,4 +13,4 @@ module AdventOfCode =
 
     let run part = 
         printfn "Test data : %A" (part (lines T))
-        printfn "Test data : %A" (part (lines P))
+        printfn "Input data : %A" (part (lines P))
