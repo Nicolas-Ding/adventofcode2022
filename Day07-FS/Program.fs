@@ -7,27 +7,21 @@ type Node(subFolders: Dictionary<string, Node>, ?parent: Node) =
     member this.parent = parent
 
 let rec parse (node:Node) (lines:string seq) = 
-    let rec parseLs (node:Node) folderLines = 
-        match (folderLines:string list) with 
-        | cd::tail when cd.StartsWith("$") -> cd::tail
-        | cd::tail when cd.StartsWith("dir") -> 
+    let parseLine (node:Node) line = 
+        match line with 
+        | "$ cd /" -> node // we suppose this only happens once and the currentNode is already initialized
+        | "$ cd .." -> match node.parent with 
+                                | Some value -> value
+                                | None -> failwith "No parents found." 
+        | cd when cd.StartsWith("$ cd ") -> node.subFolders[cd[5..]] 
+        | "$ ls" -> node 
+        | cd when cd.StartsWith("dir") -> 
             node.subFolders.Add(cd[4..], new Node(new Dictionary<string, Node>(), node))
-            parseLs node tail
-        | cd::tail -> 
+            node
+        | cd -> 
             node.size <- node.size + int(cd.Split(" ")[0])
-            parseLs node tail
-        | [] -> []
-    match List.ofSeq lines with 
-    | "$ cd /"::tail -> parse node tail // we suppose this only happens once and the currentNode is already initialized
-    | "$ cd .."::tail -> match node.parent with 
-                            | Some value -> parse value tail
-                            | None -> failwith "No parents found." 
-    | cd::tail when cd.StartsWith("$ cd ") -> 
-        parse node.subFolders[cd[5..]] tail
-    | "$ ls"::tail -> 
-        parse node (parseLs node tail)
-    | [] -> ()
-    | _ -> failwith "Unrecognized line"
+            node
+    lines |> Seq.fold parseLine node
 
 let rec computeFullSizes (node:Node) = 
     node.size <- 
