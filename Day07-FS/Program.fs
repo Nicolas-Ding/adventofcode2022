@@ -6,20 +6,26 @@ type Node(subFolders: Dictionary<string, Node>, ?parent: Node) =
     member this.subFolders = subFolders
     member this.parent = parent
 
+let (|CD|LS|DIR|FILE|) (l: string) = 
+    if l.StartsWith "$ cd " then CD l[5..] else 
+    if l.StartsWith "$ ls" then LS else
+    if l.StartsWith "dir" then DIR l[4..] else
+    FILE (l.Split(" ")[0])
+
 let rec parse (node:Node) (lines:string seq) = 
     let parseLine (node:Node) line = 
         match line with 
-        | "$ cd /" -> node // we suppose this only happens once and the currentNode is already initialized
-        | "$ cd .." -> match node.parent with 
+        | CD "/" -> node // we suppose this only happens once and the currentNode is already initialized to root node
+        | CD ".." -> match node.parent with 
                                 | Some value -> value
                                 | None -> failwith "No parents found." 
-        | cd when cd.StartsWith("$ cd ") -> node.subFolders[cd[5..]] 
-        | "$ ls" -> node 
-        | cd when cd.StartsWith("dir") -> 
-            node.subFolders.Add(cd[4..], new Node(new Dictionary<string, Node>(), node))
+        | CD dir -> node.subFolders[dir]
+        | LS -> node 
+        | DIR dir -> 
+            node.subFolders.Add(dir, new Node(new Dictionary<string, Node>(), node))
             node
-        | cd -> 
-            node.size <- node.size + int(cd.Split(" ")[0])
+        | FILE size -> 
+            node.size <- node.size + int size
             node
     lines |> Seq.fold parseLine node
 
@@ -49,7 +55,7 @@ let computePart2 (node:Node) =
 
 let part compute lines = 
     let rootNode = new Node(new Dictionary<string, Node>())
-    parse rootNode lines
+    parse rootNode lines |> ignore
     computeFullSizes rootNode |> ignore
     compute rootNode
 
